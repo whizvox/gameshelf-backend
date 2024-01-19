@@ -1,0 +1,39 @@
+package me.whizvox.gameshelf.game;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import me.whizvox.gameshelf.media.GenericMedia;
+import me.whizvox.gameshelf.media.Media;
+import me.whizvox.gameshelf.platform.Platform;
+import me.whizvox.gameshelf.rating.Rating;
+import me.whizvox.gameshelf.util.ObjectIdHexSerializer;
+import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Document("games")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class Game extends GameBase {
+
+  @JsonSerialize(using = ObjectIdHexSerializer.class)
+  public ObjectId id;
+
+  public List<Release> releases;
+
+  public List<GameRelation> relations;
+
+  public Game() {
+  }
+
+  public Game(ObjectId id, String name, String description, List<String> aliases, List<String> languages,
+              List<Platform> platforms, List<Rating> ratings, LocalDate releaseDate, List<GenericMedia> media,
+              Media boxArt, List<Release> releases, List<GameRelation> relations) {
+    super(name, description, aliases, languages, platforms, ratings, releaseDate, media, boxArt);
+    this.id = id;
+    this.releases = releases;
+    this.relations = relations;
+  }
+
+}
