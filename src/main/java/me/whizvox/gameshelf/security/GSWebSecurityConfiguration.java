@@ -95,7 +95,7 @@ public class GSWebSecurityConfiguration {
             )).access(customAccess(Role.MEMBER, false, false))
 
             .requestMatchers(combine(
-                matchers(HttpMethod.GET, "user/self", "game", "gamelist", "genre", "media/info/*", "media/*", "platform/*", "profile/*", "rating/*", "ratingsystem/*"),
+                matchers(HttpMethod.GET, "user/self", "game", "gamelist", "genre", "media/info/**", "media/**", "platform/**", "profile/**", "rating/**", "ratingsystem/**"),
                 matchers(HttpMethod.POST, "login", "logout"),
                 matchers(HttpMethod.PUT, "user/reset", "user/verify")
             )).permitAll()
