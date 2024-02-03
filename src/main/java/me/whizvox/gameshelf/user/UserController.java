@@ -3,12 +3,12 @@ package me.whizvox.gameshelf.user;
 import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.response.ApiResponse;
 import me.whizvox.gameshelf.response.PagedData;
+import me.whizvox.gameshelf.util.ErrorTypes;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.MultiValueMap;
@@ -87,12 +87,17 @@ public class UserController {
 
   @PostMapping
   public ResponseEntity<Object> create(@RequestParam String username,
-                                       @RequestParam String email,
+                                       @RequestParam(required = false) String email,
                                        @RequestParam String password,
                                        @RequestParam(defaultValue = "MEMBER") Role role,
-                                       @RequestParam(defaultValue = "false") boolean verified) {
-    User user = userService.create(username, email, password, role, verified);
-    return ApiResponse.created(new UserInfo(user));
+                                       @RequestParam(defaultValue = "false") boolean verified,
+                                       @AuthenticationPrincipal User user) {
+    Role prevRole = role.getPreviousRole();
+    if (prevRole != null && !user.role.hasPermission(prevRole)) {
+      throw ServiceException.error(ErrorTypes.ROLE_TOO_HIGH);
+    }
+    User createdUser = userService.create(username, email, password, role, verified);
+    return ApiResponse.created(new UserInfo(createdUser));
   }
 
   @PostMapping("/request/reset")
@@ -109,7 +114,8 @@ public class UserController {
 
   @PutMapping
   public ResponseEntity<Object> update(@RequestParam ObjectId id,
-                                       @RequestParam MultiValueMap<String, String> args) {
+                                       @RequestParam MultiValueMap<String, String> args,
+                                       @AuthenticationPrincipal User user) {
     User updatedUser = userService.update(id, args);
     return ApiResponse.ok(new UserInfo(updatedUser));
   }

@@ -22,6 +22,22 @@ public enum Role {
   }
 
   @Nullable
+  public Role getPreviousRole() {
+    if (ordinal() == 0) {
+      return null;
+    }
+    return values()[ordinal() - 1];
+  }
+
+  @Nullable
+  public Role getNextRole() {
+    if (ordinal() >= values().length) {
+      return null;
+    }
+    return values()[ordinal() + 1];
+  }
+
+  @Nullable
   public static Role fromInt(int i) {
     if (i >= 0 && i < values().length) {
       return values()[i];

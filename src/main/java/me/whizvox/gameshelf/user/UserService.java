@@ -100,22 +100,13 @@ public class UserService implements UserDetailsService {
     ArgumentsUtils.getBoolean(args, "verified", value -> query.addCriteria(Criteria.where("verified").is(value)));
     ArgumentsUtils.getDateTime(args, "unbannedAfter", value -> query.addCriteria(Criteria.where("banExpires").gte(value)));
     ArgumentsUtils.getDateTime(args, "unbannedBefore", value -> query.addCriteria(Criteria.where("banExpires").lte(value)));
-    ArgumentsUtils.getBoolean(args, "banned", value -> {
+    ArgumentsUtils.getString(args, "banStatus", value -> {
       Criteria criteria = Criteria.where("banExpires");
-      if (value) {
-        query.addCriteria(criteria.ne(null));
-      } else {
-        query.addCriteria(criteria.isNull());
-      }
-    });
-    ArgumentsUtils.getBoolean(args, "permabanned", value -> {
-      if (value) {
-        query.addCriteria(Criteria.where("banExpires").gte(User.PERMABAN_DATE_TIME));
-      } else {
-        query.addCriteria(new Criteria().orOperator(
-            Criteria.where("banExpires").isNull(),
-            Criteria.where("banExpires").lt(User.PERMABAN_DATE_TIME))
-        );
+      switch (value.toLowerCase()) {
+        case "notbanned" -> query.addCriteria(criteria.isNull());
+        case "banned" -> query.addCriteria(criteria.ne(null));
+        case "tempbanned" -> query.addCriteria(criteria.lt(User.PERMABAN_DATE_TIME));
+        case "permabanned" -> query.addCriteria(criteria.gte(User.PERMABAN_DATE_TIME));
       }
     });
     ArgumentsUtils.getDateTime(args, "modifiedAfter", value -> query.addCriteria(Criteria.where("lastModified").gte(value)));
@@ -132,7 +123,10 @@ public class UserService implements UserDetailsService {
     return findByEmail(email).isEmpty();
   }
 
-  public User create(String username, String email, String password, @Nullable Role role, boolean verified) {
+  public User create(String username, @Nullable String email, String password, @Nullable Role role, boolean verified) {
+    if (role == Role.GUEST) {
+      throw ServiceException.error(ErrorTypes.CANNOT_CREATE_GUEST_USER);
+    }
     ServiceUtils.checkRegex(USERNAME_PATTERN, username, "username");
     ServiceUtils.checkUnique(this::isUsernameAvailable, username, "username");
     if (email != null) {
@@ -169,7 +163,12 @@ public class UserService implements UserDetailsService {
       ServiceUtils.checkRegex(PASSWORD_PATTERN, value, "password");
       user.encpwd = passwordEncoder.encode(value);
     });
-    ArgumentsUtils.getEnum(args, "role", Role.class, value -> user.role = value);
+    ArgumentsUtils.getEnum(args, "role", Role.class, value -> {
+      if (value == Role.GUEST) {
+        throw ServiceException.error(ErrorTypes.CANNOT_CREATE_GUEST_USER);
+      }
+      user.role = value;
+    });
     ArgumentsUtils.getBoolean(args, "verified", value -> user.verified = value);
     user.lastModified = LocalDateTime.now();
     userRepo.save(user);
