@@ -16,7 +16,7 @@ public interface UserRepository extends MongoRepository<User, ObjectId> {
   @Query(value = "{ 'email': ?0 }", collation = "{ 'locale': 'en', 'strength': 2 }")
   Optional<User> findByEmail(String email);
 
-  @Query(value = "{ 'banExpires': { $lte: ?0 } }")
+  @Query(value = "{ $and: [ {'banExpires': {$ne: null}}, {'banExpires': {$lte: ?0}}, {'permaBanned': false} ] }")
   List<User> findAllWithExpiredBans(LocalDateTime now);
 
 }

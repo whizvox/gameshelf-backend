@@ -27,6 +27,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.session:spring-session-core'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 
@@ -41,4 +42,9 @@ tasks.named('test') {
 bootRun {
 	mkdir "${projectDir}/run"
 	workingDir "${projectDir}/run"
+}
+
+test {
+	mkdir "${projectDir}/test"
+	workingDir "${projectDir}/test"
 }

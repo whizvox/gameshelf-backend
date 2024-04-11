@@ -101,12 +101,11 @@ public class UserService implements UserDetailsService {
     ArgumentsUtils.getDateTime(args, "unbannedAfter", value -> query.addCriteria(Criteria.where("banExpires").gte(value)));
     ArgumentsUtils.getDateTime(args, "unbannedBefore", value -> query.addCriteria(Criteria.where("banExpires").lte(value)));
     ArgumentsUtils.getString(args, "banStatus", value -> {
-      Criteria criteria = Criteria.where("banExpires");
       switch (value.toLowerCase()) {
-        case "notbanned" -> query.addCriteria(criteria.isNull());
-        case "banned" -> query.addCriteria(criteria.ne(null));
-        case "tempbanned" -> query.addCriteria(criteria.lt(User.PERMABAN_DATE_TIME));
-        case "permabanned" -> query.addCriteria(criteria.gte(User.PERMABAN_DATE_TIME));
+        case "notbanned" -> query.addCriteria(new Criteria().andOperator(Criteria.where("banExpires").isNull(), Criteria.where("permaBanned").is(false)));
+        case "banned" -> query.addCriteria(new Criteria().orOperator(Criteria.where("banExpires").ne(null), Criteria.where("permaBanned").is(true)));
+        case "tempbanned" -> query.addCriteria(new Criteria().andOperator(Criteria.where("banExpires").ne(null), Criteria.where("permaBanned").is(false)));
+        case "permabanned" -> query.addCriteria(Criteria.where("permaBanned").is(true));
       }
     });
     ArgumentsUtils.getDateTime(args, "modifiedAfter", value -> query.addCriteria(Criteria.where("lastModified").gte(value)));
@@ -198,7 +197,7 @@ public class UserService implements UserDetailsService {
     return update(user, argsCopy);
   }
 
-  private void ban_do(User issuer, ObjectId targetId, LocalDateTime banExpires) {
+  private void ban_do(User issuer, ObjectId targetId, int days, boolean permaBan) {
     if (targetId.equals(issuer.id)) {
       throw ServiceException.error(ErrorTypes.CANNOT_BAN_SELF);
     }
@@ -206,15 +205,17 @@ public class UserService implements UserDetailsService {
     if (!issuer.role.hasPermission(target.role)) {
       throw ServiceException.error(ErrorTypes.TARGET_ROLE_HIGHER);
     }
-    if (target.isBanned()) {
-      throw ServiceException.error(ErrorTypes.USER_ALREADY_BANNED);
+    if (permaBan) {
+      target.banPermanently();
+    } else {
+      target.banTemporarily(days);
     }
-    target.banExpires = banExpires;
     userRepo.save(target);
-    if (banExpires.equals(User.PERMABAN_DATE_TIME)) {
+    if (permaBan) {
       LOGGER.info("User {} has been permanently banned by {}", target.toFriendlyString(), issuer.toFriendlyString());
     } else {
-      LOGGER.info("User {} has been banned until {} by {}", target.toFriendlyString(), banExpires.format(DateTimeFormatter.ISO_DATE), issuer.toFriendlyString());
+      //noinspection DataFlowIssue
+      LOGGER.info("User {} has been banned until {} by {}", target.toFriendlyString(), target.banExpires.format(DateTimeFormatter.ISO_DATE), issuer.toFriendlyString());
     }
   }
 
@@ -222,11 +223,11 @@ public class UserService implements UserDetailsService {
     if (days <= 0) {
       throw ServiceException.badRequest("Days cannot be below 1");
     }
-    ban_do(issuer, targetId, LocalDateTime.now().plusDays(days));
+    ban_do(issuer, targetId, days, false);
   }
 
   public void banPermanently(User issuer, ObjectId targetId) {
-    ban_do(issuer, targetId, User.PERMABAN_DATE_TIME);
+    ban_do(issuer, targetId, 0, true);
   }
 
   public void unban(User issuer, ObjectId targetId) {
@@ -237,7 +238,7 @@ public class UserService implements UserDetailsService {
     if (!target.isBanned()) {
       throw ServiceException.error(ErrorTypes.USER_NOT_BANNED);
     }
-    target.banExpires = null;
+    target.unban();
     userRepo.save(target);
     LOGGER.info("User {} has been unbanned by {}", target.toFriendlyString(), issuer.toFriendlyString());
   }

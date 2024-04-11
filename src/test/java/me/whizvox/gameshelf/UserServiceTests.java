@@ -1,6 +1,7 @@
 package me.whizvox.gameshelf;
 
 import me.whizvox.gameshelf.exception.ServiceException;
+import me.whizvox.gameshelf.profile.ProfileRepository;
 import me.whizvox.gameshelf.user.Role;
 import me.whizvox.gameshelf.user.User;
 import me.whizvox.gameshelf.user.UserRepository;
@@ -29,12 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class UserServiceTests {
 
   private final UserRepository userRepo;
+  private final ProfileRepository profileRepo;
   private final UserService userService;
 
   @Autowired
   public UserServiceTests(UserRepository userRepo,
+                          ProfileRepository profileRepo,
                           UserService userService) {
     this.userRepo = userRepo;
+    this.profileRepo = profileRepo;
     this.userService = userService;
   }
 
@@ -103,6 +107,7 @@ public class UserServiceTests {
 
   @BeforeEach
   void setUp() {
+    profileRepo.deleteAll();
     userRepo.deleteAll();
   }
 
@@ -299,20 +304,28 @@ public class UserServiceTests {
   void findAll_banned() {
     List<User> notBanned = createAll();
     User banned = createBanned(1);
-    Page<User> users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banned", "true")));
+    Page<User> users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "banned")));
     assertThatStream(users.stream()).containsExactly(banned);
-    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banned", "false")));
+    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "notbanned")));
     assertThatStream(users.stream()).containsExactlyInAnyOrderElementsOf(notBanned);
+    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "tempbanned")));
+    assertThatStream(users.stream()).containsExactly(banned);
+    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "permabanned")));
+    assertThatStream(users.stream()).isEmpty();
   }
 
   @Test
   void findAll_permabanned() {
     List<User> notBanned = createAll();
     User permaBanned = createPermabanned();
-    Page<User> users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("permabanned", "true")));
+    Page<User> users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "banned")));
     assertThatStream(users.stream()).containsExactly(permaBanned);
-    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("permabanned", "false")));
+    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "notbanned")));
     assertThatStream(users.stream()).containsExactlyInAnyOrderElementsOf(notBanned);
+    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "tempbanned")));
+    assertThatStream(users.stream()).isEmpty();
+    users = userService.findAll(defaultPageable(), createMultiValueMap(Map.of("banStatus", "permabanned")));
+    assertThatStream(users.stream()).containsExactly(permaBanned);
   }
 
   @Test

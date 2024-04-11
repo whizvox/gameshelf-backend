@@ -7,6 +7,7 @@ import me.whizvox.gameshelf.util.ObjectIdHexSerializer;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,15 +21,13 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class User implements UserDetails {
 
-  public static final LocalDateTime PERMABAN_DATE_TIME = LocalDateTime.of(99999, 12, 31, 23, 59, 59);
-
   @JsonSerialize(using = ObjectIdHexSerializer.class)
   public ObjectId id;
 
   @Indexed(unique = true, collation = "{ 'locale': 'en', strength: 2 }")
   public String username;
 
-  @Indexed(unique = true, sparse = true, collation = "{ 'locale': 'en', strength: 2 }")
+  @Indexed(unique = true, collation = "{ 'locale': 'en', strength: 2 }")
   public String email;
 
   public String encpwd;
@@ -37,8 +36,12 @@ public class User implements UserDetails {
 
   public boolean verified;
 
+  @Nullable
   public LocalDateTime banExpires;
 
+  public boolean permaBanned;
+
+  @Nullable
   public LocalDateTime lastModified;
 
   public User() {
@@ -48,6 +51,7 @@ public class User implements UserDetails {
     id = null;
     lastModified = null;
     banExpires = null;
+    permaBanned = false;
     this.username = username;
     this.email = email;
     this.encpwd = encpwd;
@@ -56,23 +60,22 @@ public class User implements UserDetails {
   }
 
   public boolean isBanned() {
-    return banExpires != null;
-  }
-
-  public boolean shouldBeUnbanned() {
-    return banExpires != null && banExpires.isBefore(LocalDateTime.now());
+    return banExpires != null || permaBanned;
   }
 
   public void banPermanently() {
-    banExpires = PERMABAN_DATE_TIME;
+    banExpires = null;
+    permaBanned = true;
   }
 
   public void banTemporarily(int days) {
     banExpires = LocalDateTime.now().plusDays(days);
+    permaBanned = false;
   }
 
   public void unban() {
     banExpires = null;
+    permaBanned = false;
   }
 
   public String toFriendlyString() {
@@ -118,17 +121,17 @@ public class User implements UserDetails {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    User user = (User) o;
-    return verified == user.verified && Objects.equals(id, user.id) && Objects.equals(username, user.username) &&
-        Objects.equals(email, user.email) && Objects.equals(encpwd, user.encpwd) && role == user.role &&
+    if (!(o instanceof User user)) return false;
+    return verified == user.verified && permaBanned == user.permaBanned && Objects.equals(id, user.id) &&
+        Objects.equals(username, user.username) && Objects.equals(email, user.email) &&
+        Objects.equals(encpwd, user.encpwd) && role == user.role &&
         DateAndTimeUtils.equalsMinusNanos(banExpires, user.banExpires) &&
         DateAndTimeUtils.equalsMinusNanos(lastModified, user.lastModified);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, username, email, encpwd, role, verified, banExpires, lastModified);
+    return Objects.hash(id, username, email, encpwd, role, verified, banExpires, permaBanned, lastModified);
   }
 
   @Override
@@ -141,6 +144,7 @@ public class User implements UserDetails {
         ", role=" + role +
         ", verified=" + verified +
         ", banExpires=" + banExpires +
+        ", permaBanned=" + permaBanned +
         ", lastModified=" + lastModified +
         '}';
   }

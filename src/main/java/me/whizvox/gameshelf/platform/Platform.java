@@ -7,6 +7,7 @@ import me.whizvox.gameshelf.util.ObjectIdHexSerializer;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +18,7 @@ public class Platform {
   @JsonSerialize(using = ObjectIdHexSerializer.class)
   public ObjectId id;
 
-  @Indexed(unique = true)
+  @Indexed
   public String shortName;
 
   public String name;
