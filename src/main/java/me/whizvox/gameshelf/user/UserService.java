@@ -4,6 +4,8 @@ import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.profile.ProfileService;
 import me.whizvox.gameshelf.pwdreset.PasswordResetService;
 import me.whizvox.gameshelf.pwdreset.PasswordResetToken;
+import me.whizvox.gameshelf.security.AccessToken;
+import me.whizvox.gameshelf.security.JWTUtil;
 import me.whizvox.gameshelf.util.ArgumentsUtils;
 import me.whizvox.gameshelf.util.ErrorTypes;
 import me.whizvox.gameshelf.util.ServiceUtils;
@@ -18,7 +20,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.lang.Nullable;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -48,6 +50,7 @@ public class UserService implements UserDetailsService {
   private final PasswordResetService pwdResetService;
   private final EmailVerificationService verificationService;
   private final ProfileService profileService;
+  private final JWTUtil jwtUtil;
 
   @Autowired
   public UserService(MongoTemplate mongoTemplate,
@@ -55,13 +58,15 @@ public class UserService implements UserDetailsService {
                      PasswordEncoder passwordEncoder,
                      PasswordResetService pwdResetService,
                      EmailVerificationService verificationService,
-                     ProfileService profileService) {
+                     ProfileService profileService,
+                     JWTUtil jwtUtil) {
     this.mongoTemplate = mongoTemplate;
     this.userRepo = userRepo;
     this.passwordEncoder = passwordEncoder;
     this.pwdResetService = pwdResetService;
     this.verificationService = verificationService;
     this.profileService = profileService;
+    this.jwtUtil = jwtUtil;
   }
 
   public Optional<User> findById(ObjectId id) {
@@ -261,6 +266,25 @@ public class UserService implements UserDetailsService {
   }
 
   /*
+   * ACCESS TOKEN
+   */
+
+  public Optional<User> getUserFromAccessToken(String accessToken) {
+    ObjectId id = jwtUtil.extractUserId(jwtUtil.extractClaims(accessToken));
+    return findById(id);
+  }
+
+  public AccessToken generateAccessToken(String username, String password, boolean rememberMe) {
+    User user = findByUsernameOrEmail(username).orElseThrow(() ->
+        ServiceException.error(ErrorTypes.INVALID_USERNAME_OR_PASSWORD)
+    );
+    if (!passwordEncoder.matches(password, user.encpwd)) {
+      throw ServiceException.error(ErrorTypes.INVALID_USERNAME_OR_PASSWORD);
+    }
+    return jwtUtil.generateToken(user.id, rememberMe ? Duration.ofDays(7) : Duration.ofHours(2));
+  }
+
+  /*
    * EMAIL VERIFICATION
    */
 
@@ -310,7 +334,7 @@ public class UserService implements UserDetailsService {
   }
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public User loadUserByUsername(String username) throws UsernameNotFoundException {
     return findByUsernameOrEmail(username).orElseThrow(() -> new UsernameNotFoundException("Unknown username or email"));
   }
 

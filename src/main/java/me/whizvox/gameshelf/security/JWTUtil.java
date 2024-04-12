@@ -2,16 +2,17 @@ package me.whizvox.gameshelf.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
@@ -35,8 +36,7 @@ public class JWTUtil {
   }
 
   private SecretKey readSecretKey(Path path) throws IOException {
-    byte[] key = Base64.getDecoder().decode(Files.readAllBytes(path));
-    return new SecretKeySpec(key, "AES");
+    return Keys.hmacShaKeyFor(Base64.getDecoder().decode(Files.readAllBytes(path)));
   }
 
   public Claims extractClaims(String token) {
@@ -51,14 +51,18 @@ public class JWTUtil {
     return new ObjectId(claims.getSubject());
   }
 
-  public String generateToken(ObjectId userId) {
+  public AccessToken generateToken(ObjectId userId, Duration lifespan) {
+    AccessToken accessToken = new AccessToken();
     LocalDateTime now = LocalDateTime.now();
-    return Jwts.builder()
+    accessToken.issued = now;
+    accessToken.expires = now.plus(lifespan);
+    accessToken.token = Jwts.builder()
         .subject(userId.toHexString())
-        .issuedAt(Date.from(now.toInstant(ZoneOffset.UTC)))
-        .expiration(Date.from(now.plusDays(7).toInstant(ZoneOffset.UTC)))
+        .issuedAt(Date.from(accessToken.issued.toInstant(ZoneOffset.UTC)))
+        .expiration(Date.from(accessToken.expires.toInstant(ZoneOffset.UTC)))
         .signWith(signingKey)
         .compact();
+    return accessToken;
   }
 
 }

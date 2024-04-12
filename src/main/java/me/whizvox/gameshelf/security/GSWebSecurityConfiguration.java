@@ -1,15 +1,11 @@
 package me.whizvox.gameshelf.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.whizvox.gameshelf.response.ApiResponse;
-import me.whizvox.gameshelf.response.ErrorResponse;
 import me.whizvox.gameshelf.user.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -60,6 +57,7 @@ public class GSWebSecurityConfiguration {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                 AuthorizeJWTFilter jwtTokenFilter,
                                                  ObjectMapper objectMapper) throws Exception {
     http.authorizeHttpRequests(authorizeRequests ->
         authorizeRequests
@@ -96,7 +94,7 @@ public class GSWebSecurityConfiguration {
 
             .requestMatchers(combine(
                 matchers(HttpMethod.GET, "user/self", "game", "gamelist", "genre", "media/info/**", "media/**", "platform/**", "profile/**", "rating/**", "ratingsystem/**"),
-                matchers(HttpMethod.POST, "login", "logout"),
+                matchers(HttpMethod.POST, "accesstoken"),
                 matchers(HttpMethod.PUT, "user/reset", "user/verify")
             )).permitAll()
 
@@ -104,18 +102,7 @@ public class GSWebSecurityConfiguration {
             .anyRequest().denyAll()
             //.anyRequest().permitAll()
     );
-    http.formLogin(formLogin ->
-        formLogin
-            .loginProcessingUrl(apiPrefix + "/login")
-            .successHandler((req, res, auth) -> new ApiResponseHandler(HttpStatus.OK, objectMapper).handle(res))
-            .failureHandler((req, res, auth) -> new ApiResponseHandler(objectMapper, new ErrorResponse(HttpStatus.BAD_REQUEST, "Invalid username or password", null)).handle(res))
-    );
-    http.logout(logout ->
-        logout
-            .logoutUrl(apiPrefix + "/logout")
-            .logoutSuccessHandler((req, res, auth) -> new ApiResponseHandler(HttpStatus.OK, objectMapper).handle(res))
-            .deleteCookies("JSESSIONID")
-    );
+    http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
     http.csrf(csrf -> csrf.disable());
     http.httpBasic(Customizer.withDefaults());
     return http.build();
