@@ -1,17 +1,17 @@
 package me.whizvox.gameshelf.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.user.User;
 import me.whizvox.gameshelf.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,15 +19,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-public class AuthorizeJWTFilter extends OncePerRequestFilter {
+public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
-  private final ObjectMapper objectMapper;
   private final UserService userService;
+  private final AccessDeniedHandler accessDeniedHandler;
 
   @Autowired
-  public AuthorizeJWTFilter(ObjectMapper objectMapper, UserService userService) {
-    this.objectMapper = objectMapper;
+  public JWTAuthenticationFilter(UserService userService) {
     this.userService = userService;
+    accessDeniedHandler = new AccessDeniedHandlerImpl();
   }
 
   @Override
@@ -54,7 +54,7 @@ public class AuthorizeJWTFilter extends OncePerRequestFilter {
       }
     }
     if (malformedAuthorization) {
-      throw ServiceException.forbidden();
+      accessDeniedHandler.handle(request, response, new AccessDeniedException("Malformed authorization header"));
     } else {
       filterChain.doFilter(request, response);
     }

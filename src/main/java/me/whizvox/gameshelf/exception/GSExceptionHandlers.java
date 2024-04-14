@@ -14,7 +14,7 @@ public class GSExceptionHandlers extends ResponseEntityExceptionHandler {
 
   private final boolean showStackTrace;
 
-  public GSExceptionHandlers(@Value("${gameshelf.response.exception.showStackTrace:true}") boolean showStackTrace) {
+  public GSExceptionHandlers(@Value("${gameshelf.response.exception.showStackTrace:false}") boolean showStackTrace) {
     this.showStackTrace = showStackTrace;
   }
 

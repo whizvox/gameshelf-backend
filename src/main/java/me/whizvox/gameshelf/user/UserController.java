@@ -131,8 +131,8 @@ public class UserController {
   @PostMapping("/ban")
   public ResponseEntity<Object> banUser(@AuthenticationPrincipal User user,
                                         @RequestParam ObjectId target,
-                                        @RequestParam Integer days,
-                                        @RequestParam Boolean forever) {
+                                        @RequestParam(required = false) Integer days,
+                                        @RequestParam(required = false) Boolean forever) {
     if (forever != null && forever) {
       userService.banPermanently(user, target);
     } else if (days != null) {
@@ -163,8 +163,8 @@ public class UserController {
     return ApiResponse.ok();
   }
 
-  @DeleteMapping("{id}")
-  public ResponseEntity<Object> delete(@PathVariable ObjectId id) {
+  @DeleteMapping
+  public ResponseEntity<Object> delete(@RequestParam ObjectId id) {
     userService.delete(id);
     return ApiResponse.ok();
   }

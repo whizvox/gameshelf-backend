@@ -1,7 +1,6 @@
 package me.whizvox.gameshelf;
 
 import me.whizvox.gameshelf.util.StringUtils;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;

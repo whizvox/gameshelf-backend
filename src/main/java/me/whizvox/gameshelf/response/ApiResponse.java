@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class ApiResponse {
@@ -58,8 +60,8 @@ public class ApiResponse {
     return create(new ErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", null));
   }
 
-  public static ResponseEntity<Object> forbidden(String message, Object details) {
-    return create(new ErrorResponse(HttpStatus.FORBIDDEN, message, details));
+  public static ResponseEntity<Object> forbidden(@Nullable String message, @Nullable Object details) {
+    return create(new ErrorResponse(HttpStatus.FORBIDDEN, Objects.requireNonNullElse(message, "Unauthorized"), details));
   }
 
   public static ResponseEntity<Object> internalServerError(String message, Object details) {

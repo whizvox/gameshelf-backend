@@ -1,6 +1,5 @@
 package me.whizvox.gameshelf.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import me.whizvox.gameshelf.user.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -57,8 +56,7 @@ public class GSWebSecurityConfiguration {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                 AuthorizeJWTFilter jwtTokenFilter,
-                                                 ObjectMapper objectMapper) throws Exception {
+                                                 JWTAuthenticationFilter jwtTokenFilter) throws Exception {
     http.authorizeHttpRequests(authorizeRequests ->
         authorizeRequests
             .requestMatchers(combine(

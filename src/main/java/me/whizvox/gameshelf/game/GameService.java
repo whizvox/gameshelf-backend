@@ -3,7 +3,6 @@ package me.whizvox.gameshelf.game;
 import me.whizvox.gameshelf.media.GenericMedia;
 import me.whizvox.gameshelf.media.Media;
 import me.whizvox.gameshelf.media.MediaService;
-import me.whizvox.gameshelf.media.SimpleMedia;
 import me.whizvox.gameshelf.platform.Platform;
 import me.whizvox.gameshelf.platform.PlatformService;
 import me.whizvox.gameshelf.rating.Rating;

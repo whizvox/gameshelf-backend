@@ -4,7 +4,6 @@ import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.media.Media;
 import me.whizvox.gameshelf.media.MediaService;
 import me.whizvox.gameshelf.util.ArgumentsUtils;
-import me.whizvox.gameshelf.util.GSLog;
 import me.whizvox.gameshelf.util.ServiceUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static me.whizvox.gameshelf.util.GSLog.LOGGER;

@@ -1,9 +1,6 @@
 package me.whizvox.gameshelf.util;
 
-import org.springframework.lang.Nullable;
-
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 
 public class StringUtils {
 
@@ -48,6 +45,10 @@ public class StringUtils {
       }
     }
     throw new IllegalArgumentException("Invalid boolean: " + str);
+  }
+
+  public static boolean isNullOrBlank(String str) {
+    return str == null || str.isBlank();
   }
 
 }
