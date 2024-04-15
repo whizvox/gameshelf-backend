@@ -49,7 +49,12 @@ public class PlatformService implements ShortNamedDocumentService {
 
   public Platform create(String shortName, String name, @Nullable String description, @Nullable ObjectId imageMediaId, @Nullable LocalDate releaseDate, @Nullable List<GenericMedia> media) {
     checkShortNameAvailable(shortName);
-    Media image = ServiceUtils.getOrNotFound(mediaRepo::findById, imageMediaId, Media.class);
+    Media image;
+    if (imageMediaId != null) {
+      image = ServiceUtils.getOrNotFound(mediaRepo::findById, imageMediaId, Media.class);
+    } else {
+      image = null;
+    }
     Platform platform = new Platform(shortName, name, description, image, releaseDate, Objects.requireNonNullElse(media, List.of()));
     return platformRepo.save(platform);
   }

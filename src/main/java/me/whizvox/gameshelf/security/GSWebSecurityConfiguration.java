@@ -1,9 +1,15 @@
 package me.whizvox.gameshelf.security;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import me.whizvox.gameshelf.user.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
@@ -16,10 +22,23 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 @EnableWebSecurity
 @Configuration
 public class GSWebSecurityConfiguration {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GSWebSecurityConfiguration.class);
 
   private final String apiPrefix;
 
@@ -56,7 +75,7 @@ public class GSWebSecurityConfiguration {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                 JWTAuthenticationFilter jwtTokenFilter) throws Exception {
+                                                 JWTAuthenticationFilter authFilter) throws Exception {
     http.authorizeHttpRequests(authorizeRequests ->
         authorizeRequests
             .requestMatchers(combine(
@@ -100,10 +119,60 @@ public class GSWebSecurityConfiguration {
             .anyRequest().denyAll()
             //.anyRequest().permitAll()
     );
-    http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
+    http.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
+    http.cors(Customizer.withDefaults());
     http.csrf(csrf -> csrf.disable());
     http.httpBasic(Customizer.withDefaults());
     return http.build();
+  }
+
+  @Bean @Primary
+  public CorsConfigurationSource corsConfigurationSource(CorsGroups groups) {
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    groups.groups().forEach(settings -> {
+      CorsConfiguration config = new CorsConfiguration();
+      if (settings.permitDefault) {
+        config.applyPermitDefaultValues();
+      }
+      config.setAllowedOriginPatterns(settings.allowedOrigins);
+      config.setAllowedMethods(settings.allowedMethods);
+      config.setAllowedHeaders(settings.allowedHeaders);
+      config.setExposedHeaders(settings.exposedHeaders);
+      config.setAllowCredentials(settings.allowCredentials);
+      source.registerCorsConfiguration(settings.pattern, config);
+    });
+    return source;
+  }
+
+  @Bean
+  public CorsGroups corsGroups(@Value("${gameshelf.cors.settingsFile:cors.json}") String settingsFile,
+                               @Value("${gameshelf.cors.generateSettingsFile:true}") boolean generateFile,
+                               ObjectMapper objectMapper) {
+    Path path = Paths.get(settingsFile);
+    List<CorsSettings> groups;
+    if (Files.exists(path)) {
+      LOG.debug("Loading CORS settings file from {}", settingsFile);
+      try (InputStream in = Files.newInputStream(path)) {
+        groups = objectMapper.readValue(in, new TypeReference<>() {});
+      } catch (IOException e) {
+        throw new RuntimeException("Could not read CORS settings file: " + settingsFile, e);
+      }
+    } else {
+      if (generateFile) {
+        LOG.info("Generating CORS settings file at {}", settingsFile);
+        CorsSettings settings = new CorsSettings();
+        groups = List.of(settings);
+        ObjectWriter prettyPrinter = objectMapper.writerWithDefaultPrettyPrinter();
+        try (OutputStream out = Files.newOutputStream(path)) {
+          prettyPrinter.writeValue(out, groups);
+        } catch (IOException e) {
+          LOG.warn("Could not save CORS settings file: " + settingsFile, e);
+        }
+      } else {
+        throw new IllegalArgumentException("CORS settings file generation turned off and no CORS settings file found");
+      }
+    }
+    return new CorsGroups(groups);
   }
 
   @Bean

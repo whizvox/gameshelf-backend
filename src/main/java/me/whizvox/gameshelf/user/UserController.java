@@ -132,8 +132,8 @@ public class UserController {
   public ResponseEntity<Object> banUser(@AuthenticationPrincipal User user,
                                         @RequestParam ObjectId target,
                                         @RequestParam(required = false) Integer days,
-                                        @RequestParam(required = false) Boolean forever) {
-    if (forever != null && forever) {
+                                        @RequestParam(defaultValue = "false") boolean forever) {
+    if (forever) {
       userService.banPermanently(user, target);
     } else if (days != null) {
       userService.banTemporarily(user, target, days);

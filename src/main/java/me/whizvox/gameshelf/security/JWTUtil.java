@@ -29,12 +29,13 @@ public class JWTUtil {
   private final SecretKey signingKey;
 
   public JWTUtil(@Value("${gameshelf.jwt.keyFile:jwt.key}") String keyFile,
-                 @Value("${gameshelf.jwt.generateKeyFile:false}") boolean generateKeyFile) {
+                 @Value("${gameshelf.jwt.generateKeyFile:true}") boolean generateKeyFile) {
     Path keyPath = Paths.get(keyFile);
     if (!Files.exists(keyPath)) {
       if (!generateKeyFile) {
         throw new RuntimeException("JWT key file not found: " + keyFile);
       }
+      LOG.info("Generating JWT secret key file at {}", keyFile);
       signingKey = Jwts.SIG.HS512.key().build(); // HMAC SHA-512
       try {
         Files.write(keyPath, List.of(Base64.getEncoder().encodeToString(signingKey.getEncoded())));
@@ -43,6 +44,7 @@ public class JWTUtil {
         LOG.warn("Could not write secret key to :" + keyPath, e);
       }
     } else {
+      LOG.debug("Loading JWT secret key file from {}", keyFile);
       try {
         signingKey = Keys.hmacShaKeyFor(Files.readAllBytes(keyPath));
       } catch (IOException e) {
