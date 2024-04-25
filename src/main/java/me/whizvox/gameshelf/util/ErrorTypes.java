@@ -20,6 +20,7 @@ public enum ErrorTypes implements ErrorType {
 
   // 401
   UNAUTHORIZED(HttpStatus.UNAUTHORIZED),
+  ACCESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED),
 
   // 403
   FORBIDDEN(HttpStatus.FORBIDDEN),

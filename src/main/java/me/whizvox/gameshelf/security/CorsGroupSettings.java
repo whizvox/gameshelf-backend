@@ -3,7 +3,7 @@ package me.whizvox.gameshelf.security;
 import java.util.List;
 import java.util.Objects;
 
-public class CorsSettings {
+public class CorsGroupSettings {
 
   public boolean permitDefault = true;
   public String pattern = "/**";
@@ -17,21 +17,27 @@ public class CorsSettings {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof CorsSettings that)) return false;
-    return allowCredentials == that.allowCredentials && maxAge == that.maxAge &&
-        Objects.equals(allowedOrigins, that.allowedOrigins) && Objects.equals(allowedMethods, that.allowedMethods) &&
-        Objects.equals(allowedHeaders, that.allowedHeaders) && Objects.equals(exposedHeaders, that.exposedHeaders);
+    if (!(o instanceof CorsGroupSettings settings)) return false;
+    return permitDefault == settings.permitDefault && allowCredentials == settings.allowCredentials &&
+        maxAge == settings.maxAge && Objects.equals(pattern, settings.pattern) &&
+        Objects.equals(allowedOrigins, settings.allowedOrigins) &&
+        Objects.equals(allowedMethods, settings.allowedMethods) &&
+        Objects.equals(allowedHeaders, settings.allowedHeaders) &&
+        Objects.equals(exposedHeaders, settings.exposedHeaders);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allowedOrigins, allowedMethods, allowedHeaders, exposedHeaders, allowCredentials, maxAge);
+    return Objects.hash(permitDefault, pattern, allowedOrigins, allowedMethods, allowedHeaders, exposedHeaders,
+        allowCredentials, maxAge);
   }
 
   @Override
   public String toString() {
     return "CorsSettings{" +
-        "allowedOrigins=" + allowedOrigins +
+        "permitDefault=" + permitDefault +
+        ", pattern='" + pattern + '\'' +
+        ", allowedOrigins=" + allowedOrigins +
         ", allowedMethods=" + allowedMethods +
         ", allowedHeaders=" + allowedHeaders +
         ", exposedHeaders=" + exposedHeaders +

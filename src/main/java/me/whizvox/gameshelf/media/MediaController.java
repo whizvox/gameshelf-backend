@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("${apiPrefix}/media")
@@ -62,9 +64,11 @@ public class MediaController {
 
   @PostMapping
   public ResponseEntity<Object> upload(@RequestParam MultipartFile file,
-                                       @RequestParam(required = false) String altText) {
+                                       @RequestParam(required = false) String altText,
+                                       @RequestParam(required = false) String[] tags) {
     try {
-      return ApiResponse.ok(mediaService.create(file.getInputStream(), file.getSize(), file.getContentType(), altText));
+      return ApiResponse.ok(mediaService.create(file.getInputStream(), file.getSize(), file.getContentType(),
+          file.getOriginalFilename(), altText, tags == null ? List.of() : Arrays.asList(tags)));
     } catch (IOException e) {
       throw ServiceException.internalServerError("Could not access file stream", e);
     }

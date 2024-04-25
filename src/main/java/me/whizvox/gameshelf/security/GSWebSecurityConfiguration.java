@@ -149,7 +149,7 @@ public class GSWebSecurityConfiguration {
                                @Value("${gameshelf.cors.generateSettingsFile:true}") boolean generateFile,
                                ObjectMapper objectMapper) {
     Path path = Paths.get(settingsFile);
-    List<CorsSettings> groups;
+    List<CorsGroupSettings> groups;
     if (Files.exists(path)) {
       LOG.debug("Loading CORS settings file from {}", settingsFile);
       try (InputStream in = Files.newInputStream(path)) {
@@ -160,8 +160,7 @@ public class GSWebSecurityConfiguration {
     } else {
       if (generateFile) {
         LOG.info("Generating CORS settings file at {}", settingsFile);
-        CorsSettings settings = new CorsSettings();
-        groups = List.of(settings);
+        groups = List.of(new CorsGroupSettings());
         ObjectWriter prettyPrinter = objectMapper.writerWithDefaultPrettyPrinter();
         try (OutputStream out = Files.newOutputStream(path)) {
           prettyPrinter.writeValue(out, groups);

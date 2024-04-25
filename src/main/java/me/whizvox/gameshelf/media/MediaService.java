@@ -20,7 +20,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 public class MediaService {
@@ -70,11 +72,24 @@ public class MediaService {
     ArgumentsUtils.getDateTime(args, "editedBefore", editedAfter -> {
       query.addCriteria(Criteria.where("lastEdited").lte(editedAfter));
     });
+    // not going to happen terribly often, so it's fine for these to be regex-d
+    ArgumentsUtils.getString(args, "fileName", fileName -> {
+      query.addCriteria(Criteria.where("fileName").regex(Pattern.quote(fileName)));
+    });
+    ArgumentsUtils.getStringList(args, "allTags", tags -> {
+      query.addCriteria(new Criteria().andOperator(tags.stream().map(tag -> Criteria.where("tags").regex(Pattern.quote(tag))).toList()));
+    });
+    ArgumentsUtils.getStringList(args, "anyTags", tags -> {
+      query.addCriteria(new Criteria().orOperator(tags.stream().map(tag -> Criteria.where("tags").regex(Pattern.quote(tag))).toList()));
+    });
     ArgumentsUtils.getString(args, "altText", keywords -> {
-      query.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(keywords.split(" ")));
+      query.addCriteria(TextCriteria.forDefaultLanguage().matchingAny(keywords.split(" ")).caseSensitive(true));
     });
     ArgumentsUtils.getString(args, "type", type -> {
       query.addCriteria(Criteria.where("mimeType").is(type));
+    });
+    ArgumentsUtils.getString(args, "typeRegex", type -> {
+      query.addCriteria(Criteria.where("mimeType").regex(Pattern.quote(type)));
     });
     query.with(pageable);
     return PageableExecutionUtils.getPage(mongoTemplate.find(query, Media.class), pageable, () -> mongoTemplate.count(query.limit(-1).skip(-1), Media.class));
@@ -88,8 +103,8 @@ public class MediaService {
     return fileStorage.openStream(getFileStoragePath(id));
   }
 
-  public Media create(InputStream in, long size, String mimeType, @Nullable String altText) {
-    Media media = new Media(size, mimeType, altText);
+  public Media create(InputStream in, long size, String mimeType, String fileName, @Nullable String altText, List<String> tags) {
+    Media media = new Media(size, mimeType, fileName, altText, tags);
     mediaRepo.save(media);
     try {
       fileStorage.upload(getFileStoragePath(media.id), in);
@@ -107,7 +122,9 @@ public class MediaService {
       media.size = file.getSize();
       media.mimeType = file.getContentType();
     }
+    ArgumentsUtils.getString(args, "fileName", value -> media.fileName = value);
     ArgumentsUtils.getString(args, "altText", value -> media.altText = value);
+    ArgumentsUtils.getStringList(args, "tags", value -> media.tags = value);
     media.lastEdited = LocalDateTime.now();
     mediaRepo.save(media);
 
