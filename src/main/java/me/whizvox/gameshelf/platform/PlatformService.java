@@ -47,7 +47,7 @@ public class PlatformService implements ShortNamedDocumentService {
     return platformRepo.findAll(Objects.requireNonNullElse(pageable, Pageable.ofSize(20)));
   }
 
-  public Platform create(String shortName, String name, @Nullable String description, @Nullable ObjectId imageMediaId, @Nullable LocalDate releaseDate, @Nullable List<GenericMedia> media) {
+  public Platform create(String shortName, String name, @Nullable String description, @Nullable String imageMediaId, @Nullable LocalDate releaseDate, @Nullable List<GenericMedia> media) {
     checkShortNameAvailable(shortName);
     Media image;
     if (imageMediaId != null) {
@@ -67,7 +67,7 @@ public class PlatformService implements ShortNamedDocumentService {
     });
     ArgumentsUtils.getString(args, "name", value -> platform.name = value);
     ArgumentsUtils.getString(args, "description", value -> platform.description = value);
-    ArgumentsUtils.getObjectId(args, "image", value ->
+    ArgumentsUtils.getString(args, "image", value ->
         platform.image = ServiceUtils.getOrNotFound(mediaRepo::findById, value, Media.class)
     );
     ArgumentsUtils.getDate(args, "releaseDate", value -> platform.releaseDate = value);

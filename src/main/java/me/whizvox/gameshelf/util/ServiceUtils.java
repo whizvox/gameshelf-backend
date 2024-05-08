@@ -20,7 +20,7 @@ public class ServiceUtils {
     return getter.apply(id).orElseThrow(() -> ServiceException.notFound("No " + clazz.getSimpleName() + " found with ID " + id));
   }
 
-  public static <T> List<T> getListOrNotFound(Function<ObjectId, Optional<T>> getter, @Nullable List<ObjectId> ids, Class<T> clazz) {
+  public static <ID, T> List<T> getListOrNotFound(Function<ID, Optional<T>> getter, @Nullable List<ID> ids, Class<T> clazz) {
     if (ids == null) {
       return List.of();
     } else {
@@ -56,19 +56,13 @@ public class ServiceUtils {
     checkBounds(str.length(), min, max, errorType);
   }
 
-  public static void verifyGenericMedia(@Nullable GenericMedia media, Function<ObjectId, Optional<Media>> getter) {
+  public static void verifyGenericMedia(@Nullable GenericMedia media, Function<String, Optional<Media>> getter) {
     if (media != null && media.isSelfHosted()) {
-      ObjectId mediaId;
-      try {
-        mediaId = new ObjectId(media.id);
-      } catch (IllegalArgumentException e) {
-        throw ServiceException.badRequest("Invalid ObjectId " + media.id);
-      }
-      getOrNotFound(getter, mediaId, Media.class);
+      getOrNotFound(getter, media.id, Media.class);
     }
   }
 
-  public static void verifyGenericMedia(@Nullable List<GenericMedia> media, Function<ObjectId, Optional<Media>> getter) {
+  public static void verifyGenericMedia(@Nullable List<GenericMedia> media, Function<String, Optional<Media>> getter) {
     if (media != null) {
       media.forEach(gMedia -> verifyGenericMedia(gMedia, getter));
     }

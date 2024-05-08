@@ -45,8 +45,8 @@ public class ProfileService {
     this.gameService = gameService;
   }
 
-  public Optional<Profile> findById(ObjectId id) {
-    return profileRepo.findById(id);
+  public Optional<Profile> findByUser(String id) {
+    return profileRepo.findByUser(id);
   }
 
   public Optional<Profile> findByUsername(String username) {
@@ -60,8 +60,8 @@ public class ProfileService {
     return profileRepo.save(new Profile(user));
   }
 
-  public Profile update(ObjectId id, MultiValueMap<String, String> args) {
-    Profile profile = ServiceUtils.getOrNotFound(this::findById, id, Profile.class);
+  public Profile update(String userId, MultiValueMap<String, String> args) {
+    Profile profile = ServiceUtils.getOrNotFound(this::findByUser, userId, Profile.class);
     ArgumentsUtils.getString(args, "biography", value -> {
       if (value == null || value.isBlank()) {
         value = "";
@@ -138,15 +138,15 @@ public class ProfileService {
     return profileRepo.save(profile);
   }
 
-  public Profile updateUsername(ObjectId id, String username) {
-    Profile profile = ServiceUtils.getOrNotFound(profileRepo::findById, id, Profile.class);
+  public Profile updateUsername(String userId, String username) {
+    Profile profile = ServiceUtils.getOrNotFound(this::findByUser, userId, Profile.class);
     profile.username = username;
     return profileRepo.save(profile);
   }
 
-  public Profile updateUsername(ObjectId id) {
-    User user = ServiceUtils.getOrNotFound(userRepo::findById, id, User.class);
-    return updateUsername(id, user.username);
+  public Profile updateUsername(String userId) {
+    User user = ServiceUtils.getOrNotFound(userRepo::findById, userId, User.class);
+    return updateUsername(userId, user.username);
   }
 
 }

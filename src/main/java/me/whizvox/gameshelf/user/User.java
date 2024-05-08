@@ -1,10 +1,8 @@
 package me.whizvox.gameshelf.user;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import me.whizvox.gameshelf.util.DateAndTimeUtils;
-import me.whizvox.gameshelf.util.ObjectIdHexSerializer;
-import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.lang.Nullable;
@@ -21,8 +19,8 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class User implements UserDetails {
 
-  @JsonSerialize(using = ObjectIdHexSerializer.class)
-  public ObjectId id;
+  @Id
+  public String id;
 
   @Indexed(unique = true, collation = "{ 'locale': 'en', strength: 2 }")
   public String username;
@@ -41,17 +39,20 @@ public class User implements UserDetails {
 
   public boolean permaBanned;
 
+  public LocalDateTime createdAt;
+
   @Nullable
-  public LocalDateTime lastModified;
+  public LocalDateTime updatedAt;
 
   public User() {
   }
 
-  public User(String username, String email, String encpwd, Role role, boolean verified) {
-    id = null;
-    lastModified = null;
+  public User(String id, String username, String email, String encpwd, Role role, boolean verified) {
+    createdAt = LocalDateTime.now();
+    updatedAt = null;
     banExpires = null;
     permaBanned = false;
+    this.id = id;
     this.username = username;
     this.email = email;
     this.encpwd = encpwd;
@@ -79,7 +80,7 @@ public class User implements UserDetails {
   }
 
   public String toFriendlyString() {
-    return id.toHexString() + " (" + username + ")";
+    return username + " (" + id + ")";
   }
 
   @Override
@@ -126,27 +127,20 @@ public class User implements UserDetails {
         Objects.equals(username, user.username) && Objects.equals(email, user.email) &&
         Objects.equals(encpwd, user.encpwd) && role == user.role &&
         DateAndTimeUtils.equalsMinusNanos(banExpires, user.banExpires) &&
-        DateAndTimeUtils.equalsMinusNanos(lastModified, user.lastModified);
+        DateAndTimeUtils.equalsMinusNanos(createdAt, user.createdAt) &&
+        DateAndTimeUtils.equalsMinusNanos(updatedAt, user.updatedAt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, username, email, encpwd, role, verified, banExpires, permaBanned, lastModified);
+    return Objects.hash(id, username, email, encpwd, role, verified, banExpires, permaBanned, createdAt, updatedAt);
   }
 
   @Override
   public String toString() {
-    return "User{" +
-        "id=" + id +
-        ", username='" + username + '\'' +
-        ", email='" + email + '\'' +
-        ", encpwd='" + encpwd + '\'' +
-        ", role=" + role +
-        ", verified=" + verified +
-        ", banExpires=" + banExpires +
-        ", permaBanned=" + permaBanned +
-        ", lastModified=" + lastModified +
-        '}';
+    return "User{" + "id='" + id + '\'' + ", username='" + username + '\'' + ", email='" + email + '\'' + ", encpwd" +
+        "='" + encpwd + '\'' + ", role=" + role + ", verified=" + verified + ", banExpires=" + banExpires + ", " +
+        "permaBanned=" + permaBanned + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + '}';
   }
 
 }

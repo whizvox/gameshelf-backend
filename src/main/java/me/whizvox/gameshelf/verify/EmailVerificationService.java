@@ -1,7 +1,6 @@
 package me.whizvox.gameshelf.verify;
 
 import me.whizvox.gameshelf.util.StringUtils;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +27,7 @@ public class EmailVerificationService {
     return find(token).isPresent();
   }
 
-  public EmailVerificationToken create(ObjectId userId) {
+  public EmailVerificationToken create(String userId) {
     String tokenStr = StringUtils.createSecureRandomSequence(TOKEN_LENGTH);
     EmailVerificationToken token = new EmailVerificationToken(tokenStr, userId, LocalDateTime.now().plusMinutes(30));
     tokenRepo.save(token);

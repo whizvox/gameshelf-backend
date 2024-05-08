@@ -47,7 +47,7 @@ public class RatingSystemController {
                                        @RequestParam LocalDate founded,
                                        @RequestParam(required = false) String description,
                                        @RequestParam(required = false) List<String> regions,
-                                       @RequestParam(required = false) ObjectId logo) {
+                                       @RequestParam(required = false) String logo) {
     RatingSystem rs = ratingService.createSystem(shortName, founded, name, description, regions, logo);
     return ApiResponse.ok(rs);
   }

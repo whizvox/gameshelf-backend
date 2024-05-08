@@ -43,7 +43,7 @@ public class GameController {
                                        @RequestParam(required = false) List<ObjectId> platforms,
                                        @RequestParam(required = false) List<ObjectId> ratings,
                                        @RequestParam(required = false) List<GenericMedia> media,
-                                       @RequestParam(required = false) ObjectId boxArt,
+                                       @RequestParam(required = false) String boxArt,
                                        @RequestParam(required = false) List<GameRelation> relations) {
     return ApiResponse.ok(gameService.create(name, description, releaseDate, aliases, languages, platforms, ratings, media, boxArt, relations));
   }

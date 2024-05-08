@@ -3,7 +3,6 @@ package me.whizvox.gameshelf.media;
 import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.response.ApiResponse;
 import me.whizvox.gameshelf.response.PagedData;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Pageable;
@@ -37,12 +36,12 @@ public class MediaController {
   }
 
   @GetMapping("info/{id}")
-  public ResponseEntity<Object> getInfo(@PathVariable ObjectId id) {
+  public ResponseEntity<Object> getInfo(@PathVariable String id) {
     return ApiResponse.ok(mediaService.findById(id));
   }
 
   @GetMapping("{id}")
-  public ResponseEntity<Object> getResource(@PathVariable ObjectId id,
+  public ResponseEntity<Object> getResource(@PathVariable String id,
                                             // small optimization in case we already called GET info/{id}
                                             @RequestParam(required = false) String mimeType) {
     if (mimeType == null) {
@@ -64,25 +63,26 @@ public class MediaController {
 
   @PostMapping
   public ResponseEntity<Object> upload(@RequestParam MultipartFile file,
+                                       @RequestParam String domain,
                                        @RequestParam(required = false) String altText,
                                        @RequestParam(required = false) String[] tags) {
     try {
       return ApiResponse.ok(mediaService.create(file.getInputStream(), file.getSize(), file.getContentType(),
-          file.getOriginalFilename(), altText, tags == null ? List.of() : Arrays.asList(tags)));
+          file.getOriginalFilename(), domain, altText, tags == null ? List.of() : Arrays.asList(tags)));
     } catch (IOException e) {
       throw ServiceException.internalServerError("Could not access file stream", e);
     }
   }
 
   @PutMapping
-  public ResponseEntity<Object> update(@RequestParam ObjectId id,
+  public ResponseEntity<Object> update(@RequestParam String id,
                                        @RequestParam(required = false) MultipartFile file,
                                        @RequestParam MultiValueMap<String, String> args) {
     return ApiResponse.ok(mediaService.update(id, file, args));
   }
 
   @DeleteMapping("{id}")
-  public ResponseEntity<Object> delete(@PathVariable ObjectId id) {
+  public ResponseEntity<Object> delete(@PathVariable String id) {
     mediaService.delete(id);
     return ApiResponse.ok();
   }

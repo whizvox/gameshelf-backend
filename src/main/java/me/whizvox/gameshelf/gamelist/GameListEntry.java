@@ -15,7 +15,7 @@ public class GameListEntry {
   @Id
   public ObjectId id;
 
-  public ObjectId user;
+  public String user;
 
   public ObjectId game;
 
@@ -40,7 +40,7 @@ public class GameListEntry {
   public GameListEntry() {
   }
 
-  public GameListEntry(ObjectId user, ObjectId game, ObjectId release, GameStatus status, int rating, String comment,
+  public GameListEntry(String user, ObjectId game, ObjectId release, GameStatus status, int rating, String comment,
                        LocalDate startDate, LocalDate endDate, int hoursPlayed, String title) {
     id = null;
     this.user = user;

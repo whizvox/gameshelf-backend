@@ -68,7 +68,7 @@ public class GameService {
                      @Nullable List<ObjectId> platformIds,
                      @Nullable List<ObjectId> ratingIds,
                      @Nullable List<GenericMedia> media,
-                     @Nullable ObjectId boxArtMediaId,
+                     @Nullable String boxArtMediaId,
                      @Nullable List<GameRelation> relations) {
     List<Platform> platforms = ServiceUtils.getListOrNotFound(platformService::findById, platformIds, Platform.class);
     List<Rating> ratings = ServiceUtils.getListOrNotFound(ratingService::findById, ratingIds, Rating.class);
@@ -97,7 +97,7 @@ public class GameService {
       ServiceUtils.verifyGenericMedia(value, mediaService::findById);
       game.media = value;
     });
-    ArgumentsUtils.getObjectId(args, "boxArt", value ->
+    ArgumentsUtils.getString(args, "boxArt", value ->
         game.boxArt = ServiceUtils.getOrNotFound(mediaService::findById, value, Media.class)
     );
   }
@@ -169,7 +169,7 @@ public class GameService {
                             @Nullable List<ObjectId> platformIds,
                             @Nullable List<ObjectId> ratingIds,
                             @Nullable List<GenericMedia> media,
-                            @Nullable ObjectId boxArtMediaId) {
+                            @Nullable String boxArtMediaId) {
     ServiceUtils.getOrNotFound(gameRepo::findById, gameId, Game.class);
     List<Platform> platforms = ServiceUtils.getListOrNotFound(platformService::findById, platformIds, Platform.class);
     List<Rating> ratings = ServiceUtils.getListOrNotFound(ratingService::findById, ratingIds, Rating.class);

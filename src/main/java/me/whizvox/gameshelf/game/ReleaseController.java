@@ -45,7 +45,7 @@ public class ReleaseController {
                                        @RequestParam(required = false) List<ObjectId> platforms,
                                        @RequestParam(required = false) List<ObjectId> ratings,
                                        @RequestParam(required = false) List<GenericMedia> media,
-                                       @RequestParam(required = false) ObjectId boxArt) {
+                                       @RequestParam(required = false) String boxArt) {
     return ApiResponse.ok(gameService.addRelease(game, name, description, releaseDate, aliases, languages, platforms, ratings, media, boxArt));
   }
 

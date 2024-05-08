@@ -7,7 +7,6 @@ import me.whizvox.gameshelf.user.User;
 import me.whizvox.gameshelf.user.UserRepository;
 import me.whizvox.gameshelf.user.UserService;
 import me.whizvox.gameshelf.util.DateAndTimeUtils;
-import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,8 +123,8 @@ public class UserServiceTests {
 
   @Test
   void findById_emptyIfNotExists() {
-    assertThat(userService.findById(new ObjectId())).isEmpty();
-    assertThat(userService.findById(new ObjectId("659516322e6f3303fba4c016"))).isEmpty();
+    assertThat(userService.findById("")).isEmpty();
+    assertThat(userService.findById("LCpYK6dfVQa12fPK")).isEmpty();
   }
 
   @Test
@@ -332,7 +331,7 @@ public class UserServiceTests {
   void findAll_modifiedAfterAndBefore() {
     List<User> knownUsers = createAll();
     User member = knownUsers.get(0);
-    member.lastModified = LocalDateTime.now();
+    member.updatedAt = LocalDateTime.now();
     userRepo.save(member);
     String before = DateAndTimeUtils.formatDateTime(LocalDateTime.now().minusDays(1));
     String after = DateAndTimeUtils.formatDateTime(LocalDateTime.now().plusDays(1));

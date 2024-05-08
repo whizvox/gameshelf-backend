@@ -51,4 +51,43 @@ public class StringUtils {
     return str == null || str.isBlank();
   }
 
+  public static boolean isAlphanumeric(char c) {
+    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+  }
+
+  public static boolean isDomainValid(String domain) {
+    // can't be empty, otherwise that would put it in the root domain
+    if (domain.isEmpty()) {
+      return false;
+    }
+    // can't end with a slash
+    if (domain.charAt(domain.length() - 1) == '/') {
+      return false;
+    }
+    int lastSlash = -1;
+    char c;
+    for (int i = 0; i < domain.length(); i++) {
+      c = domain.charAt(i);
+      if (c == '/') {
+        // can't have 2 contiguous slashes
+        if (lastSlash == i - 1) {
+          return false;
+        }
+        lastSlash = i;
+      // if not a slash, must contain only alphanumeric characters
+      } else if (!isAlphanumeric(c)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static String[] getFileBaseNameAndExtension(String fileName) {
+    int index = fileName.lastIndexOf('.');
+    if (index >= 0) {
+      return new String[] { fileName.substring(0, index), fileName.substring(index) };
+    }
+    return new String[] { fileName, "" };
+  }
+
 }

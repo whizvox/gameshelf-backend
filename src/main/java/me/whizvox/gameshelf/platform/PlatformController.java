@@ -50,7 +50,7 @@ public class PlatformController {
   public ResponseEntity<Object> create(@RequestParam String shortName,
                                        @RequestParam String name,
                                        @RequestParam(required = false) String description,
-                                       @RequestParam(required = false) ObjectId image,
+                                       @RequestParam(required = false) String image,
                                        @RequestParam(required = false) LocalDate releaseDate,
                                        @RequestParam(required = false) List<GenericMedia> media) {
     Platform platform = platformService.create(shortName, name, description, image, releaseDate, media);

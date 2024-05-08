@@ -2,8 +2,7 @@ package me.whizvox.gameshelf.media;
 
 import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.storage.FileStorage;
-import me.whizvox.gameshelf.util.ArgumentsUtils;
-import org.bson.types.ObjectId;
+import me.whizvox.gameshelf.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,26 +21,37 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Service
 public class MediaService {
 
+  private final IDGenerator idGen;
   private final MongoTemplate mongoTemplate;
   private final MediaRepository mediaRepo;
   private final FileStorage fileStorage;
+  private final MediaUrlResolver urlResolver;
 
   @Autowired
-  public MediaService(MongoTemplate mongoTemplate,
+  public MediaService(IDGenerator idGen,
+                      MongoTemplate mongoTemplate,
                       MediaRepository mediaRepo,
-                      FileStorage fileStorage) {
+                      FileStorage fileStorage,
+                      MediaUrlResolver urlResolver) {
+    this.idGen = idGen;
     this.mongoTemplate = mongoTemplate;
     this.mediaRepo = mediaRepo;
     this.fileStorage = fileStorage;
+    this.urlResolver = urlResolver;
   }
 
-  public String getFileStoragePath(ObjectId id) {
-    return "media/" + id.toHexString();
+  public String getFileStoragePath(String filePath) {
+    return "media/" + filePath;
+  }
+
+  public MediaInfo getInfo(Media media) {
+    return new MediaInfo(media, urlResolver.resolve(media.filePath));
   }
 
   public Page<Media> findAll(Pageable pageable, MultiValueMap<String, String> args) {
@@ -95,52 +105,59 @@ public class MediaService {
     return PageableExecutionUtils.getPage(mongoTemplate.find(query, Media.class), pageable, () -> mongoTemplate.count(query.limit(-1).skip(-1), Media.class));
   }
 
-  public Optional<Media> findById(ObjectId id) {
-    return mediaRepo.findById(id);
+  public Optional<Media> findById(String id) {
+    return mediaRepo.findById(id).map(media -> new MediaInfo(media, urlResolver.resolve(media.filePath)));
   }
 
-  public InputStream openStream(ObjectId id) {
-    return fileStorage.openStream(getFileStoragePath(id));
+  public InputStream openStream(String id) {
+    Media media = ServiceUtils.getOrNotFound(mediaRepo::findById, id, Media.class);
+    return fileStorage.openStream(getFileStoragePath(media.filePath));
   }
 
-  public Media create(InputStream in, long size, String mimeType, String fileName, @Nullable String altText, List<String> tags) {
-    Media media = new Media(size, mimeType, fileName, altText, tags);
+  public MediaInfo create(InputStream in, long size, String mimeType, String fileName, String domain, @Nullable String altText, List<String> tags) {
+    if (!StringUtils.isDomainValid(domain)) {
+      throw ServiceException.error(ErrorTypes.INVALID_MEDIA_DOMAIN);
+    }
+    String[] parts = StringUtils.getFileBaseNameAndExtension(fileName);
+    Media media = new Media(idGen.id(), size, mimeType, fileName, domain + "/" + UUID.randomUUID() + parts[1].toLowerCase(), altText, tags);
     mediaRepo.save(media);
     try {
-      fileStorage.upload(getFileStoragePath(media.id), in);
+      fileStorage.upload(getFileStoragePath(media.filePath), in);
     } catch (ServiceException e) {
       // remove redundant record
       mediaRepo.deleteById(media.id);
       throw e;
     }
-    return media;
+    return new MediaInfo(media, urlResolver.resolve(media.filePath));
   }
 
-  public Media update(ObjectId id, @Nullable MultipartFile file, MultiValueMap<String, String> args) {
+  public MediaInfo update(String id, @Nullable MultipartFile file, MultiValueMap<String, String> args) {
     Media media = findById(id).orElseThrow(() -> ServiceException.notFound("Could not find media with ID " + id));
     if (file != null) {
       media.size = file.getSize();
       media.mimeType = file.getContentType();
     }
-    ArgumentsUtils.getString(args, "fileName", value -> media.fileName = value);
+    ArgumentsUtils.getString(args, "fileName", value -> media.origFileName = value);
     ArgumentsUtils.getString(args, "altText", value -> media.altText = value);
     ArgumentsUtils.getStringList(args, "tags", value -> media.tags = value);
-    media.lastEdited = LocalDateTime.now();
+    media.updatedAt = LocalDateTime.now();
     mediaRepo.save(media);
 
     if (file != null) {
       try (InputStream in = file.getInputStream()) {
-        fileStorage.upload(getFileStoragePath(id), in, true);
+        fileStorage.upload(getFileStoragePath(media.filePath), in, true);
       } catch (IOException e) {
         throw ServiceException.internalServerError("Could not read file", e);
       }
     }
-    return media;
+    return new MediaInfo(media, urlResolver.resolve(media.filePath));
   }
 
-  public void delete(ObjectId id) {
+  public void delete(String id) {
+    mediaRepo.findById(id).ifPresent(media -> {
+      fileStorage.delete(getFileStoragePath(media.filePath));
+    });
     mediaRepo.deleteById(id);
-    fileStorage.delete(getFileStoragePath(id));
   }
 
 }

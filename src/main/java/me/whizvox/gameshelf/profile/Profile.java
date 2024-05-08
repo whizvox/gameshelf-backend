@@ -2,8 +2,6 @@ package me.whizvox.gameshelf.profile;
 
 import me.whizvox.gameshelf.gamelist.GameListEntry;
 import me.whizvox.gameshelf.user.User;
-import org.bson.types.ObjectId;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -14,8 +12,7 @@ import java.util.Objects;
 @Document("profiles")
 public class Profile {
 
-  @Id
-  public ObjectId id;
+  public String user;
 
   public String biography;
 
@@ -54,7 +51,7 @@ public class Profile {
   }
 
   public Profile(User user) {
-    id = user.id;
+    this.user = user.id;
     biography = "";
     birthdayYear = 0;
     birthdayMonth = 0;
@@ -71,8 +68,9 @@ public class Profile {
     username = user.username;
   }
 
-  public Profile(ObjectId id, String biography, int birthdayYear, int birthdayMonth, int birthdayDay, List<FavoriteGameEntry> favoriteGames, List<GameListEntry> games, String username) {
-    this.id = id;
+  public Profile(String userId, String biography, int birthdayYear, int birthdayMonth, int birthdayDay,
+                 List<FavoriteGameEntry> favoriteGames, List<GameListEntry> games, String username) {
+    user = userId;
     this.biography = biography;
     this.birthdayYear = birthdayYear;
     this.birthdayMonth = birthdayMonth;
@@ -105,33 +103,33 @@ public class Profile {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Profile profile = (Profile) o;
+    if (!(o instanceof Profile profile)) return false;
     return birthdayYear == profile.birthdayYear && birthdayMonth == profile.birthdayMonth &&
         birthdayDay == profile.birthdayDay && Float.compare(averageRating, profile.averageRating) == 0 &&
         totalGames == profile.totalGames && totalGamesPlaying == profile.totalGamesPlaying &&
         totalGamesFinished == profile.totalGamesFinished && totalGamesStopped == profile.totalGamesStopped &&
         totalGamesDropped == profile.totalGamesDropped && totalGamesOnHold == profile.totalGamesOnHold &&
-        totalGamesPlanned == profile.totalGamesPlanned && Objects.equals(id, profile.id) &&
+        totalGamesPlanned == profile.totalGamesPlanned && Objects.equals(user, profile.user) &&
         Objects.equals(biography, profile.biography) && Objects.equals(favoriteGames, profile.favoriteGames) &&
         Objects.equals(username, profile.username);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, biography, birthdayYear, birthdayMonth, birthdayDay, averageRating, totalGames,
-        totalGamesPlaying, totalGamesFinished, totalGamesStopped, totalGamesDropped, totalGamesOnHold,
-        totalGamesPlanned, favoriteGames, username);
+    return Objects.hash(user, biography, birthdayYear, birthdayMonth, birthdayDay, favoriteGames, averageRating,
+        totalGames, totalGamesPlaying, totalGamesFinished, totalGamesStopped, totalGamesDropped, totalGamesOnHold,
+        totalGamesPlanned, username);
   }
 
   @Override
   public String toString() {
     return "Profile{" +
-        "id=" + id +
+        ", user='" + user + '\'' +
         ", biography='" + biography + '\'' +
         ", birthdayYear=" + birthdayYear +
         ", birthdayMonth=" + birthdayMonth +
         ", birthdayDay=" + birthdayDay +
+        ", favoriteGames=" + favoriteGames +
         ", averageRating=" + averageRating +
         ", totalGames=" + totalGames +
         ", totalGamesPlaying=" + totalGamesPlaying +
@@ -140,7 +138,6 @@ public class Profile {
         ", totalGamesDropped=" + totalGamesDropped +
         ", totalGamesOnHold=" + totalGamesOnHold +
         ", totalGamesPlanned=" + totalGamesPlanned +
-        ", favoriteGames=" + favoriteGames +
         ", username='" + username + '\'' +
         '}';
   }

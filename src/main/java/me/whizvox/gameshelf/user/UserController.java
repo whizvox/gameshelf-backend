@@ -4,7 +4,6 @@ import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.response.ApiResponse;
 import me.whizvox.gameshelf.response.PagedData;
 import me.whizvox.gameshelf.util.ErrorTypes;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -30,7 +29,7 @@ public class UserController {
   }
 
   @GetMapping
-  public ResponseEntity<Object> get(@RequestParam(required = false) ObjectId id,
+  public ResponseEntity<Object> get(@RequestParam(required = false) String id,
                                     @RequestParam(required = false) String username,
                                     @RequestParam(required = false) String email,
                                     @RequestParam MultiValueMap<String, String> args,
@@ -113,7 +112,7 @@ public class UserController {
   }
 
   @PutMapping
-  public ResponseEntity<Object> update(@RequestParam ObjectId id,
+  public ResponseEntity<Object> update(@RequestParam String id,
                                        @RequestParam MultiValueMap<String, String> args,
                                        @AuthenticationPrincipal User user) {
     User updatedUser = userService.update(id, args);
@@ -130,7 +129,7 @@ public class UserController {
 
   @PostMapping("/ban")
   public ResponseEntity<Object> banUser(@AuthenticationPrincipal User user,
-                                        @RequestParam ObjectId target,
+                                        @RequestParam String target,
                                         @RequestParam(required = false) Integer days,
                                         @RequestParam(defaultValue = "false") boolean forever) {
     if (forever) {
@@ -145,7 +144,7 @@ public class UserController {
 
   @PostMapping("/unban")
   public ResponseEntity<Object> unbanUser(@AuthenticationPrincipal User issuer,
-                                          @RequestParam ObjectId target) {
+                                          @RequestParam String target) {
     userService.unban(issuer, target);
     return ApiResponse.ok();
   }
@@ -164,7 +163,7 @@ public class UserController {
   }
 
   @DeleteMapping
-  public ResponseEntity<Object> delete(@RequestParam ObjectId id) {
+  public ResponseEntity<Object> delete(@RequestParam String id) {
     userService.delete(id);
     return ApiResponse.ok();
   }

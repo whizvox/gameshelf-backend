@@ -54,7 +54,7 @@ public class RatingService {
                        ObjectId ratingSystemId,
                        @Nullable String name,
                        @Nullable String description,
-                       @Nullable List<ObjectId> logoMediaIds,
+                       @Nullable List<String> logoMediaIds,
                        @Nullable Boolean explicit) {
     RatingSystem rs = ServiceUtils.getOrNotFound(systemRepo::findById, ratingSystemId, RatingSystem.class);
     List<Media> logos = ServiceUtils.getListOrNotFound(mediaService::findById, logoMediaIds, Media.class);
@@ -78,7 +78,7 @@ public class RatingService {
     ArgumentsUtils.getString(args, "name", value -> rating.name = value);
     ArgumentsUtils.getString(args, "description", value -> rating.description = value);
     ArgumentsUtils.getBoolean(args, "explicit", value -> rating.explicit = value);
-    ArgumentsUtils.getObjectIdList(args, "logos", value -> rating.logos = ServiceUtils.getListOrNotFound(mediaService::findById, value, Media.class));
+    ArgumentsUtils.getStringList(args, "logos", value -> rating.logos = ServiceUtils.getListOrNotFound(mediaService::findById, value, Media.class));
     ratingRepo.save(rating);
     return rating;
   }
@@ -122,7 +122,7 @@ public class RatingService {
     return systemRepo.findByShortName(shortName).isEmpty();
   }
 
-  public RatingSystem createSystem(String shortName, LocalDate founded, @Nullable String name, @Nullable String description, @Nullable List<String> regions, @Nullable ObjectId logoMediaId) {
+  public RatingSystem createSystem(String shortName, LocalDate founded, @Nullable String name, @Nullable String description, @Nullable List<String> regions, @Nullable String logoMediaId) {
     checkSystemShortNameAvailable(shortName);
     Media logo = ServiceUtils.getOrNotFound(mediaService::findById, logoMediaId, Media.class);
     RatingSystem rs = new RatingSystem(shortName, name, description,
@@ -145,7 +145,7 @@ public class RatingService {
     ArgumentsUtils.getString(args, "description", value -> rs.description = value);
     ArgumentsUtils.getDate(args, "founded", value -> rs.founded = value);
     ArgumentsUtils.getStringList(args, "regions", value -> rs.regions = value);
-    ArgumentsUtils.getObjectId(args, "logo", value -> rs.logo = ServiceUtils.getOrNotFound(mediaService::findById, value, Media.class));
+    ArgumentsUtils.getString(args, "logo", value -> rs.logo = ServiceUtils.getOrNotFound(mediaService::findById, value, Media.class));
     ArgumentsUtils.getObjectIdList(args, "ratings", value -> rs.ratings = value.stream()
         .map(ratingId -> ServiceUtils.getOrNotFound(this::findById, ratingId, Rating.class))
         .toList()

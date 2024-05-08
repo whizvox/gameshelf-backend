@@ -3,7 +3,6 @@ package me.whizvox.gameshelf.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,17 +61,17 @@ public class JWTUtil {
         .getPayload();
   }
 
-  public ObjectId extractUserId(Claims claims) {
-    return new ObjectId(claims.getSubject());
+  public String extractUserId(Claims claims) {
+    return claims.getSubject();
   }
 
-  public AccessToken generateToken(ObjectId userId, Duration lifespan) {
+  public AccessToken generateToken(String userId, Duration lifespan) {
     AccessToken accessToken = new AccessToken();
     LocalDateTime now = LocalDateTime.now();
     accessToken.issued = now;
     accessToken.expires = now.plus(lifespan);
     accessToken.token = Jwts.builder()
-        .subject(userId.toHexString())
+        .subject(userId)
         .issuedAt(Date.from(accessToken.issued.toInstant(ZoneOffset.UTC)))
         .expiration(Date.from(accessToken.expires.toInstant(ZoneOffset.UTC)))
         .signWith(signingKey)

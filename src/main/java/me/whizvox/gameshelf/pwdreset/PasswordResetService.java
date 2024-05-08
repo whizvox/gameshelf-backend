@@ -1,7 +1,6 @@
 package me.whizvox.gameshelf.pwdreset;
 
-import me.whizvox.gameshelf.util.StringUtils;
-import org.bson.types.ObjectId;
+import me.whizvox.gameshelf.util.IDGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,12 +10,13 @@ import java.util.Optional;
 @Service
 public class PasswordResetService {
 
-  public static final int TOKEN_LENGTH = 12;
-
+  private final IDGenerator idGen;
   private final PasswordResetTokenRepository tokenRepo;
 
   @Autowired
-  public PasswordResetService(PasswordResetTokenRepository tokenRepo) {
+  public PasswordResetService(IDGenerator idGen,
+                              PasswordResetTokenRepository tokenRepo) {
+    this.idGen = idGen;
     this.tokenRepo = tokenRepo;
   }
 
@@ -28,8 +28,8 @@ public class PasswordResetService {
     return find(token).isPresent();
   }
 
-  public PasswordResetToken create(ObjectId user) {
-    String tokenStr = StringUtils.createSecureRandomSequence(TOKEN_LENGTH);
+  public PasswordResetToken create(String user) {
+    String tokenStr = idGen.secureId();
     PasswordResetToken token = new PasswordResetToken(tokenStr, user, LocalDateTime.now().plusMinutes(30));
     tokenRepo.save(token);
     return token;

@@ -40,7 +40,7 @@ public class RatingController {
                                        @RequestParam ObjectId system,
                                        @RequestParam(required = false) String name,
                                        @RequestParam(required = false) String description,
-                                       @RequestParam(required = false) List<ObjectId> logos,
+                                       @RequestParam(required = false) List<String> logos,
                                        @RequestParam(required = false) Boolean explicit) {
     return ApiResponse.ok(ratingService.create(shortName, system, name, description, logos, explicit));
   }

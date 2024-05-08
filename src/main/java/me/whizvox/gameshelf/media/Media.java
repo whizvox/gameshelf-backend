@@ -1,11 +1,10 @@
 package me.whizvox.gameshelf.media;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import me.whizvox.gameshelf.util.ObjectIdHexSerializer;
-import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.lang.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,8 +12,8 @@ import java.util.List;
 @Document
 public class Media {
 
-  @JsonSerialize(using = ObjectIdHexSerializer.class)
-  public ObjectId id;
+  @Id
+  public String id;
 
   @Indexed
   public long size;
@@ -23,7 +22,10 @@ public class Media {
   public String mimeType;
 
   @Indexed
-  public String fileName;
+  public String origFileName;
+
+  @Indexed
+  public String filePath;
 
   @TextIndexed
   public String altText;
@@ -31,23 +33,25 @@ public class Media {
   public List<String> tags;
 
   @Indexed
-  public LocalDateTime uploaded;
+  public LocalDateTime createdAt;
 
+  @Nullable
   @Indexed
-  public LocalDateTime lastEdited;
+  public LocalDateTime updatedAt;
 
   public Media() {
   }
 
-  public Media(long size, String mimeType, String fileName, String altText, List<String> tags) {
+  public Media(String id, long size, String mimeType, String origFileName, String filePath, String altText, List<String> tags) {
+    this.id = id;
     this.size = size;
     this.mimeType = mimeType;
-    this.fileName = fileName;
+    this.origFileName = origFileName;
+    this.filePath = filePath;
     this.altText = altText;
     this.tags = tags;
-    id = null;
-    uploaded = LocalDateTime.now();
-    lastEdited = null;
+    createdAt = LocalDateTime.now();
+    updatedAt = null;
   }
 
 }

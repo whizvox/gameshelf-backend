@@ -1,15 +1,10 @@
 package me.whizvox.gameshelf.user;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import me.whizvox.gameshelf.util.ObjectIdHexSerializer;
-import org.bson.types.ObjectId;
-
 import java.time.LocalDateTime;
 
 public class UserInfo {
 
-  @JsonSerialize(using = ObjectIdHexSerializer.class)
-  public ObjectId id;
+  public String id;
   public String username;
   public String email;
   public Role role;
@@ -18,7 +13,7 @@ public class UserInfo {
   public boolean permaBanned;
   public LocalDateTime lastModified;
 
-  public UserInfo(ObjectId id, String username, String email, Role role, boolean verified, LocalDateTime banExpires, boolean permaBanned, LocalDateTime lastModified) {
+  public UserInfo(String id, String username, String email, Role role, boolean verified, LocalDateTime banExpires, boolean permaBanned, LocalDateTime lastModified) {
     this.id = id;
     this.username = username;
     this.email = email;
@@ -30,7 +25,7 @@ public class UserInfo {
   }
 
   public UserInfo(User user) {
-    this(user.id, user.username, user.email, user.role, user.verified, user.banExpires, user.permaBanned, user.lastModified);
+    this(user.id, user.username, user.email, user.role, user.verified, user.banExpires, user.permaBanned, user.updatedAt);
   }
 
 }

@@ -8,10 +8,10 @@ import me.whizvox.gameshelf.security.AccessToken;
 import me.whizvox.gameshelf.security.JWTUtil;
 import me.whizvox.gameshelf.util.ArgumentsUtils;
 import me.whizvox.gameshelf.util.ErrorTypes;
+import me.whizvox.gameshelf.util.IDGenerator;
 import me.whizvox.gameshelf.util.ServiceUtils;
 import me.whizvox.gameshelf.verify.EmailVerificationService;
 import me.whizvox.gameshelf.verify.EmailVerificationToken;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +44,7 @@ public class UserService implements UserDetailsService {
       EMAIL_PATTERN = Pattern.compile("^[\\w\\-.]+@([\\w-]+\\.)+[\\w-]{2,}$"),
       PASSWORD_PATTERN = Pattern.compile(".{6,}");
 
+  private final IDGenerator idGen;
   private final MongoTemplate mongoTemplate;
   private final UserRepository userRepo;
   private final PasswordEncoder passwordEncoder;
@@ -53,13 +54,15 @@ public class UserService implements UserDetailsService {
   private final JWTUtil jwtUtil;
 
   @Autowired
-  public UserService(MongoTemplate mongoTemplate,
+  public UserService(IDGenerator idGen,
+                     MongoTemplate mongoTemplate,
                      UserRepository userRepo,
                      PasswordEncoder passwordEncoder,
                      PasswordResetService pwdResetService,
                      EmailVerificationService verificationService,
                      ProfileService profileService,
                      JWTUtil jwtUtil) {
+    this.idGen = idGen;
     this.mongoTemplate = mongoTemplate;
     this.userRepo = userRepo;
     this.passwordEncoder = passwordEncoder;
@@ -69,7 +72,7 @@ public class UserService implements UserDetailsService {
     this.jwtUtil = jwtUtil;
   }
 
-  public Optional<User> findById(ObjectId id) {
+  public Optional<User> findById(String id) {
     return userRepo.findById(id);
   }
 
@@ -113,8 +116,8 @@ public class UserService implements UserDetailsService {
         case "permabanned" -> query.addCriteria(Criteria.where("permaBanned").is(true));
       }
     });
-    ArgumentsUtils.getDateTime(args, "modifiedAfter", value -> query.addCriteria(Criteria.where("lastModified").gte(value)));
-    ArgumentsUtils.getDateTime(args, "modifiedBefore", value -> query.addCriteria(Criteria.where("lastModified").lte(value)));
+    ArgumentsUtils.getDateTime(args, "modifiedAfter", value -> query.addCriteria(Criteria.where("updatedAt").gte(value)));
+    ArgumentsUtils.getDateTime(args, "modifiedBefore", value -> query.addCriteria(Criteria.where("updatedAt").lte(value)));
     query.with(pageable);
     return PageableExecutionUtils.getPage(mongoTemplate.find(query, User.class), pageable, () -> mongoTemplate.count(query.limit(-1).skip(-1), User.class));
   }
@@ -141,7 +144,7 @@ public class UserService implements UserDetailsService {
     if (role == null) {
       role = Role.MEMBER;
     }
-    User user = new User(username, email, passwordEncoder.encode(password), role, verified);
+    User user = new User(idGen.secureId(), username, email, passwordEncoder.encode(password), role, verified);
     userRepo.save(user);
     profileService.create(user);
     LOGGER.info("User and profile {} has been created", user.toFriendlyString());
@@ -174,7 +177,7 @@ public class UserService implements UserDetailsService {
       user.role = value;
     });
     ArgumentsUtils.getBoolean(args, "verified", value -> user.verified = value);
-    user.lastModified = LocalDateTime.now();
+    user.updatedAt = LocalDateTime.now();
     userRepo.save(user);
     if (args.containsKey("username")) {
       profileService.updateUsername(user.id, user.username);
@@ -183,7 +186,7 @@ public class UserService implements UserDetailsService {
     return user;
   }
 
-  public User update(ObjectId id, MultiValueMap<String, String> args) {
+  public User update(String id, MultiValueMap<String, String> args) {
     User user = ServiceUtils.getOrNotFound(this::findById, id, User.class);
     return update(user, args);
   }
@@ -202,7 +205,7 @@ public class UserService implements UserDetailsService {
     return update(user, argsCopy);
   }
 
-  private void ban_do(User issuer, ObjectId targetId, int days, boolean permaBan) {
+  private void ban_do(User issuer, String targetId, int days, boolean permaBan) {
     if (targetId.equals(issuer.id)) {
       throw ServiceException.error(ErrorTypes.CANNOT_BAN_SELF);
     }
@@ -224,18 +227,18 @@ public class UserService implements UserDetailsService {
     }
   }
 
-  public void banTemporarily(User issuer, ObjectId targetId, int days) {
+  public void banTemporarily(User issuer, String targetId, int days) {
     if (days <= 0) {
       throw ServiceException.badRequest("Days cannot be below 1");
     }
     ban_do(issuer, targetId, days, false);
   }
 
-  public void banPermanently(User issuer, ObjectId targetId) {
+  public void banPermanently(User issuer, String targetId) {
     ban_do(issuer, targetId, 0, true);
   }
 
-  public void unban(User issuer, ObjectId targetId) {
+  public void unban(User issuer, String targetId) {
     User target = ServiceUtils.getOrNotFound(this::findById, targetId, User.class);
     if (!issuer.role.hasPermission(target.role)) {
       throw ServiceException.error(ErrorTypes.TARGET_ROLE_HIGHER);
@@ -258,7 +261,7 @@ public class UserService implements UserDetailsService {
     LOGGER.info("{} users' bans have expired and have been cleared", users.size());
   }
 
-  public void delete(ObjectId id) {
+  public void delete(String id) {
     findById(id).ifPresent(user -> {
       userRepo.deleteById(id);
       LOGGER.info("User {} has been deleted", user.toFriendlyString());
@@ -270,7 +273,7 @@ public class UserService implements UserDetailsService {
    */
 
   public Optional<User> getUserFromAccessToken(String accessToken) {
-    ObjectId id = jwtUtil.extractUserId(jwtUtil.extractClaims(accessToken));
+    String id = jwtUtil.extractUserId(jwtUtil.extractClaims(accessToken));
     return findById(id);
   }
 
@@ -292,7 +295,7 @@ public class UserService implements UserDetailsService {
     return verificationService.exists(token);
   }
 
-  public void sendVerificationEmail(ObjectId userId) {
+  public void sendVerificationEmail(String userId) {
     User user = ServiceUtils.getOrNotFound(this::findById, userId, User.class);
     EmailVerificationToken token = verificationService.create(userId);
     // TODO Send email to user's email address
@@ -316,7 +319,7 @@ public class UserService implements UserDetailsService {
     return pwdResetService.exists(token);
   }
 
-  public void requestPasswordReset(ObjectId userId) {
+  public void requestPasswordReset(String userId) {
     User user = ServiceUtils.getOrNotFound(this::findById, userId, User.class);
     PasswordResetToken token = pwdResetService.create(userId);
     // TODO Send email to user's email address

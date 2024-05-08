@@ -4,7 +4,6 @@ import me.whizvox.gameshelf.exception.ServiceException;
 import me.whizvox.gameshelf.response.ApiResponse;
 import me.whizvox.gameshelf.user.User;
 import me.whizvox.gameshelf.util.ErrorTypes;
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,10 +28,10 @@ public class ProfileController {
   }
 
   @GetMapping
-  public ResponseEntity<Object> get(@RequestParam(required = false) ObjectId id,
+  public ResponseEntity<Object> get(@RequestParam(required = false) String id,
                                     @RequestParam(required = false) String username) {
     if (id != null) {
-      return ApiResponse.ok(profileService.findById(id));
+      return ApiResponse.ok(profileService.findByUser(id));
     }
     if (username == null) {
       throw ServiceException.error(ErrorTypes.MISSING_PARAMETER, "Must specify 'id' or 'username'");
@@ -42,11 +41,11 @@ public class ProfileController {
 
   @GetMapping("self")
   public ResponseEntity<Object> getSelf(@AuthenticationPrincipal User user) {
-    return ApiResponse.ok(user == null ? Optional.empty() : profileService.findById(user.id));
+    return ApiResponse.ok(user == null ? Optional.empty() : profileService.findByUser(user.id));
   }
 
   @PutMapping
-  public ResponseEntity<Object> update(@RequestParam ObjectId id,
+  public ResponseEntity<Object> update(@RequestParam String id,
                                        @RequestParam MultiValueMap<String, String> args) {
     return ApiResponse.ok(profileService.update(id, args));
   }
